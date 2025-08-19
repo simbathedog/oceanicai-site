@@ -31,10 +31,13 @@ jobs:
       # Build for repository path
       - name: Build (repo path)
         working-directory: site
-        run: npm run build -- --base=/oceanicai-site/
+        run: npm run build -- --base=/
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Add CNAME
+  run: echo www.oceanicai.org > site/dist/CNAME
+
+- name: Upload artifact
+  uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
 
@@ -47,3 +50,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+
