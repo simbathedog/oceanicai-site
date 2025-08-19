@@ -24,13 +24,11 @@ jobs:
         with:
           node-version: 20
 
-      # Install deps for the app in /site
       - name: Install
         working-directory: site
-        run: npm ci
+        run: npm install
 
-      # Build for the REPO path (default). If you later move to a custom domain,
-      # change --base=/ to build for root.
+      # Build for repository path
       - name: Build (repo path)
         working-directory: site
         run: npm run build -- --base=/oceanicai-site/
