@@ -35,7 +35,7 @@ jobs:
         run: npm run build -- --base=/
 
       - name: Add CNAME
-        run: echo www.oceanicai.org > site/dist/CNAME
+        run: echo oceanicai.org > site/dist/CNAME
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -51,4 +51,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
 
