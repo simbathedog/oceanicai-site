@@ -19,6 +19,8 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Fail "git not found 
 
 # --- Locate built site output (index.html) ---
 $candidates = @(
+  "site\dist",                       # <- add these
+  "dist\site\public",                # <- add these
   "dist\site-english-latest\public",
   "dist\public",
   "build",
@@ -98,3 +100,4 @@ if ($OpenUrl) {
 }
 
 Pop-Location
+
