@@ -30,7 +30,6 @@ jobs:
         working-directory: site
         run: npm ci
 
-      # Build for custom domain (root)
       - name: Build (custom domain)
         working-directory: site
         run: npm run build -- --base=/
