@@ -23,21 +23,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
 
       - name: Install
         working-directory: site
-        run: npm install
+        run: npm ci
 
-      # Build for repository path
-      - name: Build (repo path)
+      # Build for custom domain (root)
+      - name: Build (custom domain)
         working-directory: site
         run: npm run build -- --base=/
 
       - name: Add CNAME
-  run: echo www.oceanicai.org > site/dist/CNAME
+        run: echo www.oceanicai.org > site/dist/CNAME
 
-- name: Upload artifact
-  uses: actions/upload-pages-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
 
@@ -50,5 +52,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
-
