@@ -46,28 +46,35 @@ jobs:
           $dist    = 'site/dist'
           $distAbs = (Resolve-Path $dist).Path
 
-          # Normalize a relative URL for each index.html
           Get-ChildItem -Path $distAbs -Filter index.html -Recurse | ForEach-Object {
             $file = $_.FullName
             $dir  = Split-Path -Path $file -Parent
 
-            # Cross-platform relative path, then turn \ into /, and ensure leading slash when present
-            $rel  = [System.IO.Path]::GetRelativePath($distAbs, $dir)
-            $rel  = $rel -replace '\\','/'
-            if ([string]::IsNullOrWhiteSpace($rel)) { $url = "$origin/" } else { $url = "$origin/$rel/" }
+            # Normalize relative dir -> URL
+            $rel  = [System.IO.Path]::GetRelativePath($distAbs, $dir) -replace '\\','/'
+            if ($rel -eq '.' -or [string]::IsNullOrWhiteSpace($rel)) {
+              $url = "$origin/"
+            } else {
+              $url = "$origin/$rel/"
+            }
 
             $html = Get-Content -Raw -Path $file
 
-            # Only inject if not present
             if ($html -notmatch '(?i)<link[^>]+rel\s*=\s*["'']canonical["'']') {
               $tag = "<link rel=`"canonical`" href=`"$url`" />"
 
-              # Prefer insert AFTER <head ...>
               if ($html -match '(?is)(<head[^>]*>)') {
+                # Insert right after <head ...>
                 $new = $html -replace '(?is)(<head[^>]*>)', "`$1`n  $tag"
-              } else {
-                # Fallback: before first </head> if somehow missing opening tag
+              } elseif ($html -match '(?is)</head>') {
+                # Fallback: before closing </head>
                 $new = $html -replace '(?is)</head>', "  $tag`n</head>"
+              } elseif ($html -match '(?is)(<html[^>]*>)') {
+                # No head at all? Create one after <html ...>
+                $new = $html -replace '(?is)(<html[^>]*>)', "`$1`n<head>`n  $tag`n</head>"
+              } else {
+                # Absolute fallback: prepend
+                $new = "$tag`n$html"
               }
 
               [System.IO.File]::WriteAllText($file, $new, [System.Text.UTF8Encoding]::new($false))
