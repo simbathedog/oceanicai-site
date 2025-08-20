@@ -36,7 +36,84 @@ jobs:
 
       - name: Add CNAME
         run: echo www.oceanicai.org > site/dist/CNAME
+      - name: Inject canonical tags
+        shell: pwsh
+        run: |
+          $origin  = 'https://www.oceanicai.org'
+          $dist    = 'site/dist'
+          $distAbs = (Resolve-Path $dist).Path
+          Get-ChildItem -Path $distAbs -Filter index.html -Recurse | ForEach-Object {
+            $file = name: Build and Deploy to Pages
 
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install
+        working-directory: site
+        run: npm install
+
+      - name: Build (custom domain)
+        working-directory: site
+        run: npm run build -- --base=/
+
+      - name: Add CNAME
+        run: echo www.oceanicai.org > site/dist/CNAME
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+
+
+.FullName
+            $rel  = Split-Path -Path $file -Parent
+            $rel  = $rel.Substring($distAbs.Length) -replace '\\','/'
+            if ([string]::IsNullOrEmpty($rel)) { $url = "$origin/" } else { $url = "$origin$rel/" }
+
+            $html = Get-Content -Raw -Path $file
+            if ($html -notmatch '(?i)<link[^>]+rel\s*=\s*["'']canonical["'']') {
+              $tag = "<link rel=`"canonical`" href=`"$url`" />"
+              $new = $html -replace '(?is)</head>', "  $tag`n</head>"
+              [System.IO.File]::WriteAllText($file, $new, [System.Text.UTF8Encoding]::new($false))
+              Write-Host "Injected canonical $url → $file"
+            } else {
+              Write-Host "Canonical already present → $file"
+            }
+          }
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
