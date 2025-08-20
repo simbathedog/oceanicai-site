@@ -45,19 +45,35 @@ jobs:
           $origin  = 'https://www.oceanicai.org'
           $dist    = 'site/dist'
           $distAbs = (Resolve-Path $dist).Path
+
+          # Normalize a relative URL for each index.html
           Get-ChildItem -Path $distAbs -Filter index.html -Recurse | ForEach-Object {
             $file = $_.FullName
-            $rel  = Split-Path -Path $file -Parent
-            $rel  = $rel.Substring($distAbs.Length) -replace '\\','/'
-            if ([string]::IsNullOrWhiteSpace($rel)) { $url = "$origin/" } else { $url = "$origin$rel/" }
+            $dir  = Split-Path -Path $file -Parent
+
+            # Cross-platform relative path, then turn \ into /, and ensure leading slash when present
+            $rel  = [System.IO.Path]::GetRelativePath($distAbs, $dir)
+            $rel  = $rel -replace '\\','/'
+            if ([string]::IsNullOrWhiteSpace($rel)) { $url = "$origin/" } else { $url = "$origin/$rel/" }
+
             $html = Get-Content -Raw -Path $file
+
+            # Only inject if not present
             if ($html -notmatch '(?i)<link[^>]+rel\s*=\s*["'']canonical["'']') {
               $tag = "<link rel=`"canonical`" href=`"$url`" />"
-              $new = $html -replace '(?is)</head>', "  $tag`n</head>"
+
+              # Prefer insert AFTER <head ...>
+              if ($html -match '(?is)(<head[^>]*>)') {
+                $new = $html -replace '(?is)(<head[^>]*>)', "`$1`n  $tag"
+              } else {
+                # Fallback: before first </head> if somehow missing opening tag
+                $new = $html -replace '(?is)</head>', "  $tag`n</head>"
+              }
+
               [System.IO.File]::WriteAllText($file, $new, [System.Text.UTF8Encoding]::new($false))
-              Write-Host "Injected canonical $url → $file"
+              Write-Host "Injected canonical $url -> $file"
             } else {
-              Write-Host "Canonical already present → $file"
+              Write-Host "Canonical already present -> $file"
             }
           }
 
