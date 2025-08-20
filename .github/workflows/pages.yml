@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -21,12 +21,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
           cache-dependency-path: site/package-lock.json
 
       - name: Install
         working-directory: site
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build (custom domain)
         working-directory: site
@@ -45,7 +49,7 @@ jobs:
             $file = $_.FullName
             $rel  = Split-Path -Path $file -Parent
             $rel  = $rel.Substring($distAbs.Length) -replace '\\','/'
-            if ([string]::IsNullOrEmpty($rel)) { $url = "$origin/" } else { $url = "$origin$rel/" }
+            if ([string]::IsNullOrWhiteSpace($rel)) { $url = "$origin/" } else { $url = "$origin$rel/" }
             $html = Get-Content -Raw -Path $file
             if ($html -notmatch '(?i)<link[^>]+rel\s*=\s*["'']canonical["'']') {
               $tag = "<link rel=`"canonical`" href=`"$url`" />"
